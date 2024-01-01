@@ -38,9 +38,9 @@ import torch
 import random
 import time
 from paho.mqtt import client as mqtt_client
-broker = ''
-port = 8883
-topic = "python/mqtt"
+broker = 'localhost'
+port = 1883
+topic = "test"
 
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
 username = ''
@@ -211,10 +211,18 @@ def run(
 
 
                 detected_class=(names[int(c)])
+               
                 if detected_class == 'person':
                     msg="green"
+
+                    # print(msg)
                     if msg!=last_msg:
                         payload= client.publish(topic,msg)
+
+                        print(payload)
+                        print(msg)
+                        print(topic)
+
                         status =payload[0]
                         last_msg=msg
                         if status == 0:
@@ -305,7 +313,7 @@ def parse_opt():
 
 
 def main(opt):
-    check_requirements(exclude=('tensorboard', 'thop'))
+    check_requirements(ROOT / 'requirements.txt',exclude=('tensorboard', 'thop'))
     run(**vars(opt))
 
 
