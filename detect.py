@@ -66,7 +66,13 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
+
+
+
+# to inferencing in various script types
 from models.common import DetectMultiBackend
+
+
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams
 from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
@@ -149,7 +155,13 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+
+
+
+    
+    y=""
     for path, im, im0s, vid_cap, s in dataset:
+        x="" 
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -170,11 +182,20 @@ def run(
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
         # Process predictions
+
+
+
+
+
+         
         for i, det in enumerate(pred):  # per image
             seen += 1
             if webcam:  # batch_size >= 1
                 p, im0, frame = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
+                y=""
+                #x += f'{i}: '
+                
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
@@ -182,6 +203,12 @@ def run(
             save_path = str(save_dir / p.name)  # im.jpg
             txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[2:]  # print string
+
+            # s_split=s.split()
+            # print(s_split[0]+" "+s_split[1])
+            # x+=s_split[0]+" "+s_split[1] +"   "
+
+
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
@@ -194,6 +221,9 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
+
+
+                    x += f"{n} {names[int(c)]}{'s' * (n > 1)}, " 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     if save_txt:  # Write to file
@@ -211,17 +241,35 @@ def run(
 
 
                 detected_class=(names[int(c)])
-               
-                if detected_class == 'person':
-                    msg="green"
+                #print(names)
+                #print(detected_class)
 
+                #x+=detected_class+" "
+                #print(y)
+                y+=x
+                if detected_class == 'bottle':
+                    
+                    #detection= s
+                    
+                    split_s = s.split()
+
+                    
+                        
+                    # image_info = f"{split_s[0]} {split_s[1]} {split_s[3]} {split_s[4]}"
+                    # detection=f"{split_s[0:]}"
+                    
+
+                    
+
+                    msg="green"
+                   
                     # print(msg)
                     if msg!=last_msg:
-                        payload= client.publish(topic,msg)
+                        payload= client.publish(topic,y)
 
-                        print(payload)
-                        print(msg)
-                        print(topic)
+                        # print(payload)
+                        # print(msg)
+                        # print(topic)
 
                         status =payload[0]
                         last_msg=msg
@@ -229,7 +277,9 @@ def run(
                             print(f"Send `{msg}` to topic `{topic}`")
                         else:
                             print(f"Failed to send message to topic {topic}")                
-
+                    else:
+                        msg="yellow"
+                        last_msg=msg
             else:
                 msg="red"
                 last_msg=msg
@@ -265,11 +315,11 @@ def run(
                     vid_writer[i].write(im0)
 
         # Print time (inference-only)
-        LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
+        #LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+    #LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
 
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
@@ -308,7 +358,7 @@ def parse_opt():
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
-    print_args(vars(opt))
+    #print_args(vars(opt))
     return opt
 
 
